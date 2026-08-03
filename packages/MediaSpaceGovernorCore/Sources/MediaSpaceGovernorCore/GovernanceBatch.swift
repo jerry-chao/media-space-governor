@@ -23,5 +23,5 @@ public struct GovernanceBatch: Codable, Sendable, Equatable {
 public enum GovernanceBatchType: String, Codable, Sendable, Equatable, CaseIterable {
     case largeColdVideos
     case coldScreenshots
-    case oldArchivedImages
+    case coldCameraPhotos
 }

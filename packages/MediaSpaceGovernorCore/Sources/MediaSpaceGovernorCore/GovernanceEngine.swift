@@ -106,11 +106,22 @@ public struct GovernanceEngine {
         return .eligibleForCleanup
     }
 
+    /// The single cleanup predicate shared by eligibility, recommendations,
+    /// and batch grouping, so all three can never drift apart.
+    private func isCleanupEligible(
+        resource: MediaResource,
+        archiveRecord: ArchiveRecord?,
+        now: Date
+    ) -> Bool {
+        cleanupEligibility(resource: resource, archiveRecord: archiveRecord, now: now) == .eligibleForCleanup
+    }
+
     // MARK: - Recommendations
 
     /// Governance Recommendations for an inventory: archive cold unarchived
-    /// resources, clean cold archived resources. Protected Resources never
-    /// receive a recommendation.
+    /// resources, clean cold archived resources that are still locally present.
+    /// Protected Resources and already-cleaned resources never receive a
+    /// recommendation.
     public func recommendations(
         resources: [MediaResource],
         archiveRecords: [ArchiveRecord],
@@ -123,9 +134,12 @@ public struct GovernanceEngine {
             .filter { !$0.isProtected }
             .filter { isColdCandidate($0, now: now) }
             .sorted { $0.id < $1.id }
-            .map { resource in
-                let isArchiveComplete = archiveByResource[resource.id]?.archiveState == .archiveComplete
-                if isArchiveComplete {
+            .compactMap { resource in
+                let record = archiveByResource[resource.id]
+                if record?.archiveState == .archiveComplete {
+                    guard isCleanupEligible(resource: resource, archiveRecord: record, now: now) else {
+                        return nil
+                    }
                     return GovernanceRecommendation(
                         resourceID: resource.id,
                         action: .cleanup,
@@ -156,10 +170,11 @@ public struct GovernanceEngine {
         )
 
         func isActionable(_ resource: MediaResource) -> Bool {
-            guard !resource.isProtected else { return false }
-            guard resource.localPresence != .archivedLocalCleaned else { return false }
-            guard archiveByResource[resource.id]?.archiveState == .archiveComplete else { return false }
-            return isColdCandidate(resource, now: now)
+            isCleanupEligible(
+                resource: resource,
+                archiveRecord: archiveByResource[resource.id],
+                now: now
+            )
         }
 
         let actionable = resources.filter(isActionable).sorted { $0.id < $1.id }
@@ -170,7 +185,7 @@ public struct GovernanceEngine {
                 && resource.sizeBytes >= policy.largeVideoSizeBytes
         }
         let coldScreenshots = actionable.filter { $0.contentHint == .screenshot }
-        let oldArchivedImages = actionable.filter { $0.contentHint == .cameraPhoto }
+        let coldCameraPhotos = actionable.filter { $0.contentHint == .cameraPhoto }
 
         var batches: [GovernanceBatch] = []
         if !largeColdVideos.isEmpty {
@@ -179,8 +194,8 @@ public struct GovernanceEngine {
         if !coldScreenshots.isEmpty {
             batches.append(makeBatch(type: .coldScreenshots, resources: coldScreenshots))
         }
-        if !oldArchivedImages.isEmpty {
-            batches.append(makeBatch(type: .oldArchivedImages, resources: oldArchivedImages))
+        if !coldCameraPhotos.isEmpty {
+            batches.append(makeBatch(type: .coldCameraPhotos, resources: coldCameraPhotos))
         }
         return batches
     }

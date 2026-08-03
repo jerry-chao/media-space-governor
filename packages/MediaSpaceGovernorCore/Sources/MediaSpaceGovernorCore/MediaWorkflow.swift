@@ -32,7 +32,14 @@ public struct MediaWorkflow {
     }
 
     /// Brings an archived resource back onto the device as a usable local copy.
-    public func restore(_ resource: MediaResource) -> MediaResource {
+    ///
+    /// Restore always requires Archive Completion, so it can never fabricate a
+    /// local copy that has no remote original behind it. Throws
+    /// `GovernanceError.restoreBlocked` otherwise.
+    public func restore(_ resource: MediaResource, archiveRecord: ArchiveRecord?) throws -> MediaResource {
+        guard let record = archiveRecord, record.archiveState == .archiveComplete else {
+            throw GovernanceError.restoreBlocked
+        }
         var updated = resource
         updated.localPresence = .localAndArchived
         return updated

@@ -126,7 +126,7 @@ Recommended default batch families:
 
 - large cold videos
 - cold screenshots
-- old archived images above a configurable cooling threshold
+- cold camera photos above a configurable cooling threshold
 - archive-complete resources eligible for cleanup
 
 Batch generation should remain local in phase 1, because the product is single-device and the relevant signals are already on-device. The backend should not be required to compute governance logic just to render recommendations.

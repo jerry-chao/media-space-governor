@@ -5,20 +5,8 @@ final class MediaWorkflowTests: XCTestCase {
 
     private let workflow = MediaWorkflow(engine: GovernanceEngine(policy: .default))
 
-    private func coldVideo(id: String, protected: Bool = false, presence: LocalPresence = .localAndArchived) -> MediaResource {
-        MediaResource(
-            id: id,
-            mediaType: .video,
-            contentHint: .ordinaryVideo,
-            sizeBytes: 200 * 1024 * 1024,
-            createdAt: Fixtures.daysAgo(400),
-            isProtected: protected,
-            localPresence: presence
-        )
-    }
-
     func testConfirmedCleanupOfEligibleResourceRemovesLocalPrimary() throws {
-        let resource = coldVideo(id: "r1")
+        let resource = Fixtures.coldVideo(id: "r1", sizeBytes: 200 * 1024 * 1024)
         let archive = Fixtures.archive(for: resource.id)
 
         let cleaned = try workflow.confirmCleanup(
@@ -32,7 +20,7 @@ final class MediaWorkflowTests: XCTestCase {
     }
 
     func testCleanupWithoutArchiveCompletionIsBlocked() {
-        let resource = coldVideo(id: "r2")
+        let resource = Fixtures.coldVideo(id: "r2", sizeBytes: 200 * 1024 * 1024)
 
         XCTAssertThrowsError(
             try workflow.confirmCleanup(of: resource, archiveRecord: nil, now: Fixtures.now)
@@ -42,7 +30,7 @@ final class MediaWorkflowTests: XCTestCase {
     }
 
     func testCleanupOfProtectedResourceIsBlocked() {
-        let resource = coldVideo(id: "r3", protected: true)
+        let resource = Fixtures.coldVideo(id: "r3", sizeBytes: 200 * 1024 * 1024, protected: true)
         let archive = Fixtures.archive(for: resource.id)
 
         XCTAssertThrowsError(
@@ -52,11 +40,22 @@ final class MediaWorkflowTests: XCTestCase {
         }
     }
 
-    func testRestoreReturnsCleanedResourceToLocal() {
-        let cleaned = coldVideo(id: "r4", presence: .archivedLocalCleaned)
+    func testRestoreReturnsCleanedResourceToLocal() throws {
+        let cleaned = Fixtures.coldVideo(id: "r4", sizeBytes: 200 * 1024 * 1024, presence: .archivedLocalCleaned)
+        let archive = Fixtures.archive(for: cleaned.id)
 
-        let restored = workflow.restore(cleaned)
+        let restored = try workflow.restore(cleaned, archiveRecord: archive)
 
         XCTAssertEqual(restored.localPresence, .localAndArchived)
+    }
+
+    func testRestoreWithoutArchiveCompletionIsBlocked() {
+        let cleaned = Fixtures.coldVideo(id: "r5", sizeBytes: 200 * 1024 * 1024, presence: .archivedLocalCleaned)
+
+        XCTAssertThrowsError(
+            try workflow.restore(cleaned, archiveRecord: nil)
+        ) { error in
+            XCTAssertEqual(error as? GovernanceError, .restoreBlocked)
+        }
     }
 }

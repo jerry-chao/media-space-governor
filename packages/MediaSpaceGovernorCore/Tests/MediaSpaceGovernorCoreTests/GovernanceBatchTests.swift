@@ -5,19 +5,11 @@ final class GovernanceBatchTests: XCTestCase {
 
     private let engine = GovernanceEngine(policy: .default)
 
-    private func coldVideo(id: String, sizeMB: UInt64) -> MediaResource {
-        MediaResource(
-            id: id,
-            mediaType: .video,
-            contentHint: .ordinaryVideo,
-            sizeBytes: sizeMB * 1024 * 1024,
-            createdAt: Fixtures.daysAgo(400),
-            localPresence: .localAndArchived
-        )
-    }
-
     func testLargeColdVideosGroupIntoSingleBatchWithSummedSavings() {
-        let resources = [coldVideo(id: "v1", sizeMB: 200), coldVideo(id: "v2", sizeMB: 150)]
+        let resources = [
+            Fixtures.coldVideo(id: "v1", sizeBytes: 200 * 1024 * 1024),
+            Fixtures.coldVideo(id: "v2", sizeBytes: 150 * 1024 * 1024)
+        ]
         let archives = resources.map { Fixtures.archive(for: $0.id) }
 
         let batches = engine.batches(resources: resources, archiveRecords: archives, now: Fixtures.now)
@@ -49,15 +41,8 @@ final class GovernanceBatchTests: XCTestCase {
         XCTAssertEqual(batches.first?.resourceIDs, ["s1"])
     }
 
-    func testOldArchivedCameraPhotoFormsBatch() {
-        let photo = MediaResource(
-            id: "p1",
-            mediaType: .image,
-            contentHint: .cameraPhoto,
-            sizeBytes: 5 * 1024 * 1024,
-            createdAt: Fixtures.daysAgo(400),
-            localPresence: .localAndArchived
-        )
+    func testColdCameraPhotoFormsBatch() {
+        let photo = Fixtures.coldCameraPhoto(id: "p1", sizeBytes: 5 * 1024 * 1024)
 
         let batches = engine.batches(
             resources: [photo],
@@ -66,11 +51,11 @@ final class GovernanceBatchTests: XCTestCase {
         )
 
         XCTAssertEqual(batches.count, 1)
-        XCTAssertEqual(batches.first?.batchType, .oldArchivedImages)
+        XCTAssertEqual(batches.first?.batchType, .coldCameraPhotos)
     }
 
     func testColdResourceWithoutArchiveCompletionDoesNotEnterCleanupBatch() {
-        let video = coldVideo(id: "v3", sizeMB: 200)
+        let video = Fixtures.coldVideo(id: "v3", sizeBytes: 200 * 1024 * 1024)
 
         let batches = engine.batches(resources: [video], archiveRecords: [], now: Fixtures.now)
 
@@ -78,15 +63,7 @@ final class GovernanceBatchTests: XCTestCase {
     }
 
     func testProtectedColdArchivedVideoIsExcludedFromBatches() {
-        let video = MediaResource(
-            id: "v4",
-            mediaType: .video,
-            contentHint: .ordinaryVideo,
-            sizeBytes: 200 * 1024 * 1024,
-            createdAt: Fixtures.daysAgo(400),
-            isProtected: true,
-            localPresence: .localAndArchived
-        )
+        let video = Fixtures.coldVideo(id: "v4", sizeBytes: 200 * 1024 * 1024, protected: true)
 
         let batches = engine.batches(
             resources: [video],
@@ -98,7 +75,7 @@ final class GovernanceBatchTests: XCTestCase {
     }
 
     func testDisablingLargeVideoPreferenceDropsLargeVideoBatch() {
-        let video = coldVideo(id: "v5", sizeMB: 200)
+        let video = Fixtures.coldVideo(id: "v5", sizeBytes: 200 * 1024 * 1024)
         let engine = GovernanceEngine(policy: PolicySettings(preferLargeVideoGovernance: false))
 
         let batches = engine.batches(
@@ -111,14 +88,7 @@ final class GovernanceBatchTests: XCTestCase {
     }
 
     func testAlreadyCleanedResourceDoesNotFormCleanupBatch() {
-        let video = MediaResource(
-            id: "v6",
-            mediaType: .video,
-            contentHint: .ordinaryVideo,
-            sizeBytes: 200 * 1024 * 1024,
-            createdAt: Fixtures.daysAgo(400),
-            localPresence: .archivedLocalCleaned
-        )
+        let video = Fixtures.coldVideo(id: "v6", sizeBytes: 200 * 1024 * 1024, presence: .archivedLocalCleaned)
 
         let batches = engine.batches(
             resources: [video],
@@ -130,7 +100,7 @@ final class GovernanceBatchTests: XCTestCase {
     }
 
     func testSmallColdVideoIsNotGroupedIntoCleanupBatch() {
-        let video = coldVideo(id: "v7", sizeMB: 20)
+        let video = Fixtures.coldVideo(id: "v7", sizeBytes: 20 * 1024 * 1024)
 
         let batches = engine.batches(
             resources: [video],

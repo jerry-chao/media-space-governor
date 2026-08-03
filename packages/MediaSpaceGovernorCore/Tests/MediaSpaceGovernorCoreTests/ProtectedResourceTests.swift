@@ -5,27 +5,19 @@ final class ProtectedResourceTests: XCTestCase {
 
     private let engine = GovernanceEngine(policy: .default)
 
-    private func coldProtectedResource() -> MediaResource {
-        MediaResource(
-            id: "protected-1",
-            mediaType: .image,
-            contentHint: .cameraPhoto,
-            sizeBytes: 4 * 1024 * 1024,
-            createdAt: Fixtures.daysAgo(400),
-            isProtected: true,
-            localPresence: .localAndArchived
-        )
+    private func protectedResource() -> MediaResource {
+        Fixtures.coldCameraPhoto(id: "protected-1", protected: true)
     }
 
     func testProtectedColdResourceIsStillClassifiedAsCold() {
-        let state = engine.classify(coldProtectedResource(), archiveRecord: Fixtures.archive(for: "protected-1"), now: Fixtures.now)
+        let state = engine.classify(protectedResource(), archiveRecord: Fixtures.archive(for: "protected-1"), now: Fixtures.now)
 
         XCTAssertTrue(state.isColdCandidate)
         XCTAssertTrue(state.isProtected)
     }
 
     func testProtectedResourceNeverReceivesArchiveOrCleanupRecommendation() {
-        let resource = coldProtectedResource()
+        let resource = protectedResource()
 
         let recommendations = engine.recommendations(
             resources: [resource],
@@ -37,7 +29,7 @@ final class ProtectedResourceTests: XCTestCase {
     }
 
     func testProtectedArchivedResourceIsBlockedFromCleanup() {
-        let resource = coldProtectedResource()
+        let resource = protectedResource()
 
         let eligibility = engine.cleanupEligibility(
             resource: resource,
@@ -84,6 +76,18 @@ final class ProtectedResourceTests: XCTestCase {
         )
 
         XCTAssertEqual(recommendations.map(\.action), [.cleanup])
+    }
+
+    func testAlreadyCleanedColdResourceGetsNoCleanupRecommendation() {
+        let resource = Fixtures.coldVideo(id: "cold-3", presence: .archivedLocalCleaned)
+
+        let recommendations = engine.recommendations(
+            resources: [resource],
+            archiveRecords: [Fixtures.archive(for: resource.id)],
+            now: Fixtures.now
+        )
+
+        XCTAssertTrue(recommendations.isEmpty)
     }
 
     func testActiveResourceGetsNoRecommendation() {
