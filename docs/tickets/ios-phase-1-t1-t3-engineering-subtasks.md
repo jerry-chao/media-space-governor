@@ -60,6 +60,9 @@ Scope covered here:
 - define the archive coordinator interface boundary
 - define the local store interface boundary
 - ensure none of these interfaces require direct use of iOS UI or framework-specific types in their domain-facing surface
+- deferred: the `MediaSpaceGovernorCore` package slice ships only the
+  platform-neutral domain shapes and transitions; the three adapter interfaces
+  are stubbed conceptually here and implemented as iOS adapters in T2/T3
 
 ### T1.7 Create workflow test harness skeleton
 

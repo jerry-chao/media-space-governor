@@ -21,14 +21,7 @@ final class GovernanceBatchTests: XCTestCase {
     }
 
     func testColdScreenshotFormsBatch() {
-        let screenshot = MediaResource(
-            id: "s1",
-            mediaType: .image,
-            contentHint: .screenshot,
-            sizeBytes: 8 * 1024 * 1024,
-            createdAt: Fixtures.daysAgo(400),
-            localPresence: .localAndArchived
-        )
+        let screenshot = Fixtures.coldScreenshot(id: "s1")
 
         let batches = engine.batches(
             resources: [screenshot],

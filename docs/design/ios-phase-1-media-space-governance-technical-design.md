@@ -129,6 +129,11 @@ Recommended default batch families:
 - cold camera photos above a configurable cooling threshold
 - archive-complete resources eligible for cleanup
 
+> Phase-1 decision: the engine groups the first three high-value families only.
+> The catch-all "archive-complete resources eligible for cleanup" family is
+> deferred, so a cold resource outside those three families is cleanup-eligible
+> but not surfaced in a Governance Batch until a later slice.
+
 Batch generation should remain local in phase 1, because the product is single-device and the relevant signals are already on-device. The backend should not be required to compute governance logic just to render recommendations.
 
 ### Step 4: Archive Initiation
@@ -302,6 +307,11 @@ The client-local model should include at least these conceptual records:
 - aggressive screenshot governance enabled
 - large video preference enabled
 - show cleanup only for archive-complete enabled
+
+> Phase-1 decision: "show cleanup only for archive-complete" is fixed ON and
+> not user-configurable. The trust model (US18/US32 and the Security and Trust
+> Constraints above) forbids cleanup without Archive Completion, so the core
+> engine hard-codes the guard rather than exposing a switch.
 
 ## Archive Service Design
 

@@ -8,6 +8,6 @@ public enum CleanupEligibility: String, Codable, Sendable, Equatable, CaseIterab
     case blockedByPolicy
     /// Archive complete, not protected, cold, and present locally.
     case eligibleForCleanup
-    /// Local copy already cleaned; not a candidate anymore.
+    /// Local copy not usable on the device: cleaned, or restore never completed.
     case cleanedLocally
 }

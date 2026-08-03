@@ -8,6 +8,8 @@ import Foundation
 public struct GovernanceEngine {
     public let policy: PolicySettings
 
+    private static let secondsPerDay: TimeInterval = 86_400
+
     public init(policy: PolicySettings = .default) {
         self.policy = policy
     }
@@ -26,7 +28,7 @@ public struct GovernanceEngine {
 
     public func usageHeat(_ resource: MediaResource, now: Date) -> UsageHeat {
         let threshold = Double(applicableCoolingThreshold(resource))
-        let ageDays = now.timeIntervalSince(resource.createdAt) / 86_400
+        let ageDays = now.timeIntervalSince(resource.createdAt) / Self.secondsPerDay
         guard ageDays >= 0 else { return .active }
 
         // Evidence of use inside the cooling window, or simply young enough.
@@ -51,7 +53,7 @@ public struct GovernanceEngine {
     /// Days since the most recent of view/share/edit evidence, if any exists.
     private func recentEvidenceDays(_ resource: MediaResource, now: Date) -> Double? {
         resource.usageEvidenceDates
-            .map { now.timeIntervalSince($0) / 86_400 }
+            .map { now.timeIntervalSince($0) / Self.secondsPerDay }
             .min()
     }
 
@@ -86,9 +88,7 @@ public struct GovernanceEngine {
         archiveRecord: ArchiveRecord?,
         now: Date
     ) -> CleanupEligibility {
-        if resource.localPresence == .archivedLocalCleaned
-            || resource.localPresence == .restoreInProgress
-            || resource.localPresence == .restoreFailed {
+        guard resource.isLocallyPresent else {
             return .cleanedLocally
         }
         guard let record = archiveRecord, record.archiveState == .archiveComplete else {
@@ -209,8 +209,11 @@ public struct GovernanceEngine {
     }
 
     /// Builds a `resourceID -> record` index once, so callers never hand-roll it.
+    ///
+    /// Keeps the first record on a duplicate `resourceID` so a stale
+    /// reconciliation snapshot can never crash the engine.
     private func archiveIndex(_ records: [ArchiveRecord]) -> [String: ArchiveRecord] {
-        Dictionary(uniqueKeysWithValues: records.map { ($0.resourceID, $0) })
+        Dictionary(records.map { ($0.resourceID, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     private func sortedByID(_ resources: [MediaResource]) -> [MediaResource] {

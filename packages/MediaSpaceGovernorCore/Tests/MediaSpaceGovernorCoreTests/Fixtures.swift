@@ -54,4 +54,22 @@ enum Fixtures {
             localPresence: presence
         )
     }
+
+    /// A Cold screenshot, the `coldScreenshots` batch family.
+    static func coldScreenshot(
+        id: String,
+        sizeBytes: UInt64 = 8 * 1024 * 1024,
+        protected: Bool = false,
+        presence: LocalPresence = .localAndArchived
+    ) -> MediaResource {
+        MediaResource(
+            id: id,
+            mediaType: .image,
+            contentHint: .screenshot,
+            sizeBytes: sizeBytes,
+            createdAt: daysAgo(400),
+            isProtected: protected,
+            localPresence: presence
+        )
+    }
 }
