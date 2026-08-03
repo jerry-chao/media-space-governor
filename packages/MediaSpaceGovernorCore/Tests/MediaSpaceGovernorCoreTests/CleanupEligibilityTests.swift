@@ -67,4 +67,18 @@ final class CleanupEligibilityTests: XCTestCase {
 
         XCTAssertEqual(eligibility, .cleanedLocally)
     }
+
+    func testResourceBeingRestoredIsNotCleanupEligible() {
+        for presence in [LocalPresence.restoreInProgress, LocalPresence.restoreFailed] {
+            let resource = Fixtures.coldVideo(id: "r6", presence: presence)
+
+            let eligibility = engine.cleanupEligibility(
+                resource: resource,
+                archiveRecord: Fixtures.archive(for: resource.id),
+                now: Fixtures.now
+            )
+
+            XCTAssertEqual(eligibility, .cleanedLocally)
+        }
+    }
 }

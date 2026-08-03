@@ -90,6 +90,54 @@ final class ProtectedResourceTests: XCTestCase {
         XCTAssertTrue(recommendations.isEmpty)
     }
 
+    func testCleanupRecommendationCarriesSpaceSavingAndEligibility() {
+        let resource = Fixtures.coldVideo(id: "cold-4", sizeBytes: 120 * 1024 * 1024)
+
+        let recommendations = engine.recommendations(
+            resources: [resource],
+            archiveRecords: [Fixtures.archive(for: resource.id)],
+            now: Fixtures.now
+        )
+
+        guard let recommendation = recommendations.first else {
+            return XCTFail("expected a cleanup recommendation")
+        }
+        XCTAssertEqual(recommendation.action, .cleanup)
+        XCTAssertEqual(recommendation.spaceSavingBytes, 120 * 1024 * 1024)
+        XCTAssertEqual(recommendation.cleanupEligibility, .eligibleForCleanup)
+        XCTAssertEqual(recommendation.id, "cleanup-cold-4")
+    }
+
+    func testArchiveRecommendationCarriesNoSpaceSaving() {
+        let resource = Fixtures.coldVideo(id: "cold-5")
+
+        let recommendations = engine.recommendations(
+            resources: [resource],
+            archiveRecords: [],
+            now: Fixtures.now
+        )
+
+        guard let recommendation = recommendations.first else {
+            return XCTFail("expected an archive recommendation")
+        }
+        XCTAssertEqual(recommendation.action, .archive)
+        XCTAssertEqual(recommendation.spaceSavingBytes, 0)
+        XCTAssertNil(recommendation.cleanupEligibility)
+        XCTAssertEqual(recommendation.id, "archive-cold-5")
+    }
+
+    func testResourceBeingRestoredGetsNoRecommendation() {
+        let resource = Fixtures.coldVideo(id: "cold-6", presence: .restoreInProgress)
+
+        let recommendations = engine.recommendations(
+            resources: [resource],
+            archiveRecords: [Fixtures.archive(for: resource.id)],
+            now: Fixtures.now
+        )
+
+        XCTAssertTrue(recommendations.isEmpty)
+    }
+
     func testActiveResourceGetsNoRecommendation() {
         let resource = MediaResource(
             id: "active-1",

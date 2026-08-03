@@ -6,4 +6,8 @@ public enum LocalPresence: String, Codable, Sendable, Equatable, CaseIterable {
     case localAndArchived
     /// Archived remotely and cleaned from the device.
     case archivedLocalCleaned
+    /// Restore of the archived original is in progress; local copy not usable yet.
+    case restoreInProgress
+    /// Restore failed; the local copy is not usable.
+    case restoreFailed
 }

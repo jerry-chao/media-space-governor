@@ -37,7 +37,7 @@ public struct GovernanceEngine {
             return .active
         }
         // Old enough, but there is some (now stale) usage evidence.
-        if hasUsageEvidence(resource) {
+        if resource.hasUsageEvidence {
             return .lukewarm
         }
         // Old enough and no usage evidence at all.
@@ -50,14 +50,9 @@ public struct GovernanceEngine {
 
     /// Days since the most recent of view/share/edit evidence, if any exists.
     private func recentEvidenceDays(_ resource: MediaResource, now: Date) -> Double? {
-        let evidenceDates = [resource.lastViewedAt, resource.lastSharedAt, resource.lastEditedAt]
-            .compactMap { $0 }
+        resource.usageEvidenceDates
             .map { now.timeIntervalSince($0) / 86_400 }
-        return evidenceDates.min()
-    }
-
-    private func hasUsageEvidence(_ resource: MediaResource) -> Bool {
-        resource.lastViewedAt != nil || resource.lastSharedAt != nil || resource.lastEditedAt != nil
+            .min()
     }
 
     // MARK: - Classification
@@ -91,7 +86,9 @@ public struct GovernanceEngine {
         archiveRecord: ArchiveRecord?,
         now: Date
     ) -> CleanupEligibility {
-        if resource.localPresence == .archivedLocalCleaned {
+        if resource.localPresence == .archivedLocalCleaned
+            || resource.localPresence == .restoreInProgress
+            || resource.localPresence == .restoreFailed {
             return .cleanedLocally
         }
         guard let record = archiveRecord, record.archiveState == .archiveComplete else {
@@ -120,38 +117,41 @@ public struct GovernanceEngine {
 
     /// Governance Recommendations for an inventory: archive cold unarchived
     /// resources, clean cold archived resources that are still locally present.
-    /// Protected Resources and already-cleaned resources never receive a
-    /// recommendation.
+    /// Protected Resources and resources not fully present locally never receive
+    /// a recommendation.
     public func recommendations(
         resources: [MediaResource],
         archiveRecords: [ArchiveRecord],
         now: Date
     ) -> [GovernanceRecommendation] {
-        let archiveByResource = Dictionary(
-            uniqueKeysWithValues: archiveRecords.map { ($0.resourceID, $0) }
-        )
-        return resources
-            .filter { !$0.isProtected }
-            .filter { isColdCandidate($0, now: now) }
-            .sorted { $0.id < $1.id }
-            .compactMap { resource in
-                let record = archiveByResource[resource.id]
-                if record?.archiveState == .archiveComplete {
-                    guard isCleanupEligible(resource: resource, archiveRecord: record, now: now) else {
-                        return nil
-                    }
-                    return GovernanceRecommendation(
-                        resourceID: resource.id,
-                        action: .cleanup,
-                        rationale: ["Cold resource with Archive Completion"]
-                    )
+        let archiveByResource = archiveIndex(archiveRecords)
+        return sortedByID(
+            resources
+                .filter { !$0.isProtected }
+                .filter { isColdCandidate($0, now: now) }
+        ).compactMap { resource in
+            guard resource.isLocallyPresent else { return nil }
+            let record = archiveByResource[resource.id]
+            if record?.archiveState == .archiveComplete {
+                guard isCleanupEligible(resource: resource, archiveRecord: record, now: now) else {
+                    return nil
                 }
                 return GovernanceRecommendation(
                     resourceID: resource.id,
-                    action: .archive,
-                    rationale: ["Cold resource not yet archived"]
+                    action: .cleanup,
+                    spaceSavingBytes: resource.sizeBytes,
+                    cleanupEligibility: .eligibleForCleanup,
+                    rationale: ["Cold resource with Archive Completion"]
                 )
             }
+            return GovernanceRecommendation(
+                resourceID: resource.id,
+                action: .archive,
+                spaceSavingBytes: 0,
+                cleanupEligibility: nil,
+                rationale: ["Cold resource not yet archived"]
+            )
+        }
     }
 
     // MARK: - Governance batches
@@ -165,9 +165,7 @@ public struct GovernanceEngine {
         archiveRecords: [ArchiveRecord],
         now: Date
     ) -> [GovernanceBatch] {
-        let archiveByResource = Dictionary(
-            uniqueKeysWithValues: archiveRecords.map { ($0.resourceID, $0) }
-        )
+        let archiveByResource = archiveIndex(archiveRecords)
 
         func isActionable(_ resource: MediaResource) -> Bool {
             isCleanupEligible(
@@ -177,7 +175,7 @@ public struct GovernanceEngine {
             )
         }
 
-        let actionable = resources.filter(isActionable).sorted { $0.id < $1.id }
+        let actionable = sortedByID(resources.filter(isActionable))
 
         let largeColdVideos = actionable.filter { resource in
             policy.preferLargeVideoGovernance
@@ -204,8 +202,18 @@ public struct GovernanceEngine {
         GovernanceBatch(
             id: type.rawValue,
             batchType: type,
+            action: .cleanup,
             resourceIDs: resources.map(\.id),
             totalSpaceSavingBytes: resources.reduce(0) { $0 + $1.sizeBytes }
         )
+    }
+
+    /// Builds a `resourceID -> record` index once, so callers never hand-roll it.
+    private func archiveIndex(_ records: [ArchiveRecord]) -> [String: ArchiveRecord] {
+        Dictionary(uniqueKeysWithValues: records.map { ($0.resourceID, $0) })
+    }
+
+    private func sortedByID(_ resources: [MediaResource]) -> [MediaResource] {
+        resources.sorted { $0.id < $1.id }
     }
 }

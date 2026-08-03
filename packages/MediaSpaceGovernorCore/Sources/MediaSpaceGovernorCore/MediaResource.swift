@@ -42,4 +42,19 @@ public struct MediaResource: Codable, Sendable, Equatable {
         self.isProtected = isProtected
         self.localPresence = localPresence
     }
+
+    /// Whether a usable working copy is present on the device.
+    public var isLocallyPresent: Bool {
+        localPresence == .localOnly || localPresence == .localAndArchived
+    }
+
+    /// The dates of the most recent view/share/edit evidence, if any.
+    public var usageEvidenceDates: [Date] {
+        [lastViewedAt, lastSharedAt, lastEditedAt].compactMap { $0 }
+    }
+
+    /// Whether there is any recorded usage evidence at all.
+    public var hasUsageEvidence: Bool {
+        !usageEvidenceDates.isEmpty
+    }
 }
