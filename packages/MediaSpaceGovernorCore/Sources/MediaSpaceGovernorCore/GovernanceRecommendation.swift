@@ -7,7 +7,10 @@ public struct GovernanceRecommendation: Codable, Sendable, Equatable {
     public let resourceID: String
     public let action: GovernanceAction
     /// Local bytes the action would free on the device; zero for archive actions.
-    public let spaceSavingBytes: UInt64
+    /// Local bytes the action would free on the device. Zero for archive
+    /// actions (they free nothing); nil for cleanup actions whose local
+    /// original size is unmeasured or unavailable.
+    public let spaceSavingBytes: UInt64?
     /// Cleanup eligibility backing a cleanup action; nil for archive actions.
     public let cleanupEligibility: CleanupEligibility?
     public let rationale: [String]
@@ -15,7 +18,7 @@ public struct GovernanceRecommendation: Codable, Sendable, Equatable {
     public init(
         resourceID: String,
         action: GovernanceAction,
-        spaceSavingBytes: UInt64,
+        spaceSavingBytes: UInt64?,
         cleanupEligibility: CleanupEligibility?,
         rationale: [String]
     ) {

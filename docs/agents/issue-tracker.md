@@ -1,23 +1,20 @@
 # Issue tracker
 
-This repo tracks work in GitHub Issues for `jerry-chao/media-space-governor`.
+Issues and specs for this repo live as local Markdown under `.scratch/`.
 
 ## Tracker type
 
-GitHub
+Local Markdown
 
-## Repository
+## Conventions
 
-- Owner: `jerry-chao`
-- Repo: `media-space-governor`
+- One feature per directory: `.scratch/<feature-slug>/`
+- The spec is `.scratch/<feature-slug>/spec.md`
+- Implementation issues are one file per ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`
+- Comments and conversation history append under a `## Comments` heading
 
 ## Workflow
 
-- Create issues with the GitHub CLI against `jerry-chao/media-space-governor`
-- Read and update issues in that repository
-- Use GitHub Issues as the default request surface for specs, tickets, and triage work
-- Do not treat pull requests as part of the triage queue by default
-
-## Notes
-
-- If local planning artifacts are needed temporarily, they do not replace GitHub Issues as the source of tracked work
+- Create and update specs, tickets, and triage artifacts locally under `.scratch/`
+- Do not publish new specs or tickets to GitHub Issues
+- GitHub Issue #1 predates this policy; its specification is migrated locally but the remote issue is left unchanged

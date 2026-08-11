@@ -20,6 +20,10 @@ _Avoid_: Cache, replica, temporary copy
 The single mobile device whose local media inventory is being analyzed and governed by the product for a given account in the first stage.
 _Avoid_: Device fleet, endpoint set, multi-device library
 
+**Library Access Coverage**:
+The portion of the managed device's photo library the user has authorized the product to analyze. Limited access must be visible so the user never mistakes a partial inventory for a full-library result.
+_Avoid_: Assumed full library, complete scan claim, hidden access
+
 **Governance Classification**:
 A classification of media used to support storage governance decisions, centered on media type, retention posture, and usage heat rather than rich album-style content labeling.
 _Avoid_: Smart album, content taxonomy, AI gallery tags
@@ -85,5 +89,5 @@ The primary product view organized around storage pressure, governance opportuni
 _Avoid_: Gallery-first home, timeline-first home, smart album homepage
 
 **Space Saving Opportunity**:
-The amount of device storage a user could reclaim through a specific governance action or batch, distinguished from theoretical total library size or already-realized savings.
+The measured amount of locally available device storage a user could reclaim through a specific governance action or batch. Resources whose original is not on-device contribute no estimate until their local size is known, distinguishing this from theoretical total library size or already-realized savings.
 _Avoid_: Total storage, vanity number, mixed savings estimate

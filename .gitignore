@@ -1,4 +1,7 @@
 .build/
 .swiftpm/
-*.xcodeproj
+build/
+.pi-subagents/
 .DS_Store
+xcuserdata/
+*.xcuserstate

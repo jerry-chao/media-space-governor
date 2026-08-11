@@ -22,7 +22,7 @@ enum Fixtures {
     /// A Cold Resource: old enough that no usage evidence can keep it active.
     static func coldVideo(
         id: String,
-        sizeBytes: UInt64 = 50 * 1024 * 1024,
+        sizeBytes: UInt64? = 50 * 1024 * 1024,
         protected: Bool = false,
         presence: LocalPresence = .localAndArchived
     ) -> MediaResource {
@@ -40,7 +40,7 @@ enum Fixtures {
     /// A Cold camera photo, the `coldCameraPhotos` batch family.
     static func coldCameraPhoto(
         id: String,
-        sizeBytes: UInt64 = 4 * 1024 * 1024,
+        sizeBytes: UInt64? = 4 * 1024 * 1024,
         protected: Bool = false,
         presence: LocalPresence = .localAndArchived
     ) -> MediaResource {
@@ -58,7 +58,7 @@ enum Fixtures {
     /// A Cold screenshot, the `coldScreenshots` batch family.
     static func coldScreenshot(
         id: String,
-        sizeBytes: UInt64 = 8 * 1024 * 1024,
+        sizeBytes: UInt64? = 8 * 1024 * 1024,
         protected: Bool = false,
         presence: LocalPresence = .localAndArchived
     ) -> MediaResource {

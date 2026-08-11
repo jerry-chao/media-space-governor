@@ -180,7 +180,7 @@ public struct GovernanceEngine {
         let largeColdVideos = actionable.filter { resource in
             policy.preferLargeVideoGovernance
                 && resource.mediaType == .video
-                && resource.sizeBytes >= policy.largeVideoSizeBytes
+                && (resource.sizeBytes ?? 0) >= policy.largeVideoSizeBytes
         }
         let coldScreenshots = actionable.filter { $0.contentHint == .screenshot }
         let coldCameraPhotos = actionable.filter { $0.contentHint == .cameraPhoto }
@@ -198,13 +198,33 @@ public struct GovernanceEngine {
         return batches
     }
 
+    // MARK: - Local size measurement candidates
+
+    /// Resources that qualify for local-original size measurement: Cold,
+    /// not Protected, and still present locally. Distinct from cleanup
+    /// eligibility (which also requires Archive Completion). Whether the
+    /// original is truly on-device is discovered by the measurement pass,
+    /// which reports an unavailable outcome when it is not.
+    public func measurementCandidates(
+        resources: [MediaResource],
+        now: Date
+    ) -> [MediaResource] {
+        sortedByID(
+            resources.filter { resource in
+                !resource.isProtected
+                    && isColdCandidate(resource, now: now)
+                    && resource.isLocallyPresent
+            }
+        )
+    }
+
     private func makeBatch(type: GovernanceBatchType, resources: [MediaResource]) -> GovernanceBatch {
         GovernanceBatch(
             id: type.rawValue,
             batchType: type,
             action: .cleanup,
             resourceIDs: resources.map(\.id),
-            totalSpaceSavingBytes: resources.reduce(0) { $0 + $1.sizeBytes }
+            totalSpaceSavingBytes: resources.reduce(0) { $0 + ($1.sizeBytes ?? 0) }
         )
     }
 

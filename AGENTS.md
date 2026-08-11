@@ -2,11 +2,7 @@
 
 ### Issue tracker
 
-Issues are tracked in GitHub Issues for `jerry-chao/media-space-governor`. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-The default triage label vocabulary is used: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+Issues and specs are tracked as local Markdown under `.scratch/`. See `docs/agents/issue-tracker.md`.
 
 ### Domain docs
 

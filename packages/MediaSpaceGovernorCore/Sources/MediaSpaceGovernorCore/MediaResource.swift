@@ -8,7 +8,10 @@ public struct MediaResource: Codable, Sendable, Equatable {
     public let id: String
     public let mediaType: MediaType
     public let contentHint: ContentHint
-    public let sizeBytes: UInt64
+    /// Measured local byte size of the original components, or nil while
+    /// unmeasured or while no local original is available. Never fabricated as
+    /// a zero-byte estimate.
+    public let sizeBytes: UInt64?
     public let createdAt: Date
     /// Most recent on-device view time, where the platform makes it available.
     public let lastViewedAt: Date?
@@ -23,7 +26,7 @@ public struct MediaResource: Codable, Sendable, Equatable {
         id: String,
         mediaType: MediaType,
         contentHint: ContentHint,
-        sizeBytes: UInt64,
+        sizeBytes: UInt64? = nil,
         createdAt: Date,
         lastViewedAt: Date? = nil,
         lastSharedAt: Date? = nil,
@@ -46,6 +49,23 @@ public struct MediaResource: Codable, Sendable, Equatable {
     /// Whether a usable working copy is present on the device.
     public var isLocallyPresent: Bool {
         localPresence == .localOnly || localPresence == .localAndArchived
+    }
+
+    /// A copy with the measured local original size filled in. All other
+    /// facts are unchanged; used when measurement completes after mapping.
+    public func withMeasuredSize(_ bytes: UInt64) -> MediaResource {
+        MediaResource(
+            id: id,
+            mediaType: mediaType,
+            contentHint: contentHint,
+            sizeBytes: bytes,
+            createdAt: createdAt,
+            lastViewedAt: lastViewedAt,
+            lastSharedAt: lastSharedAt,
+            lastEditedAt: lastEditedAt,
+            isProtected: isProtected,
+            localPresence: localPresence
+        )
     }
 
     /// The dates of the most recent view/share/edit evidence, if any.
