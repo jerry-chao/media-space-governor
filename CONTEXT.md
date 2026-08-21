@@ -45,7 +45,7 @@ A user-reviewable set of governance recommendations grouped so they can be confi
 _Avoid_: Bulk delete, one-click wipe, random selection
 
 **Governance-Driven Grouping**:
-A way of grouping media according to storage impact, cooling duration, archive readiness, and similar governance value signals rather than subject matter.
+A way of grouping media according to storage impact, cooling duration, archive readiness, and similar governance value signals rather than subject matter. Applied in two ways that share the same grouping logic: as the browse grouping of the Governance-Centered View's summary, and as the action grouping behind Governance Batches.
 _Avoid_: Album grouping, theme grouping, content-first grouping
 
 **Archive Completion**:
